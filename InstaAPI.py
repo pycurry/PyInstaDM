@@ -1,7 +1,7 @@
 ##!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import requests
+import urllib.parse
 # import random
 import json
 import hashlib
@@ -17,20 +17,13 @@ from datetime import datetime
 import calendar
 import os
 # from requests_toolbelt import MultipartEncoder
+from PIL import Image
 
 # Turn off InsecureRequestWarning
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-# The urllib library was split into other modules from Python 2 to Python 3
-if sys.version_info.major == 3:
-    import urllib.parse
-try:
-    from ImageUtils import getImageSize
-except:
-    # python3 import fix
-    pass
 
 
 class InstagramAPI:
@@ -204,7 +197,8 @@ class InstagramAPI:
         return self.SendRequest('media/configure/?video=1', self.generateSignature(data))
 
     def configure(self, upload_id, photo, caption=''):
-        (w, h) = getImageSize(photo)
+        with Image.open(photo) as im:
+            imwidth, imheight = im.size
         data = json.dumps({'_csrftoken': self.token,
                            'media_folder': 'Instagram',
                            'source_type': 4,
@@ -214,13 +208,13 @@ class InstagramAPI:
                            'upload_id': upload_id,
                            'device': self.DEVICE_SETTINGS,
                            'edits': {
-                               'crop_original_size': [w * 1.0, h * 1.0],
+                               'crop_original_size': [imwidth * 1.0, imheight * 1.0],
                                'crop_center': [0.0, 0.0],
                                'crop_zoom': 1.0
                            },
                            'extra': {
-                               'source_width': w,
-                               'source_height': h
+                               'source_width': imwidth,
+                               'source_height': imheight
                            }})
         return self.SendRequest('media/configure/?', self.generateSignature(data))
 
@@ -286,7 +280,7 @@ class InstagramAPI:
         verify = False  # don't show request warning
 
         if (not self.isLoggedIn and not login):
-            raise Exception("Not logged in!\n")
+            raise Exception("Not logged in!\nPlease use self.login()\n")
 
         self.session.headers.update({'Connection': 'close',
                                'Accept': '*/*',
